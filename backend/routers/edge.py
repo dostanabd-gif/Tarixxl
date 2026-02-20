@@ -1,7 +1,7 @@
 import json
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -12,13 +12,17 @@ router = APIRouter(prefix="/edge", tags=["edge"])
 
 
 class HeartbeatIn(BaseModel):
-    node_id: str
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str = Field(min_length=2, max_length=128)
     online: bool = True
 
 
 class QueueCommandIn(BaseModel):
-    node_id: str
-    command: str
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str = Field(min_length=2, max_length=128)
+    command: str = Field(min_length=2, max_length=128)
     payload: dict
 
 
@@ -71,7 +75,7 @@ def queue_command(
 @router.get("/commands/pending")
 def get_pending_commands(
     node_id: str,
-    limit: int = 20,
+    limit: int = Query(default=20, ge=1, le=500),
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
@@ -96,7 +100,7 @@ def ack_command(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):
-    db.execute(
+    result = db.execute(
         text(
             """
             UPDATE edge_command_queue
@@ -106,5 +110,7 @@ def ack_command(
         ),
         {"id": command_id, "org_id": user["org_id"]},
     )
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Command not found")
     db.commit()
     return {"status": "applied", "id": command_id}

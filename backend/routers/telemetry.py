@@ -1,7 +1,8 @@
+from datetime import datetime
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -13,8 +14,10 @@ router = APIRouter(prefix="/telemetry", tags=["telemetry"])
 
 
 class TelemetryIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     event_id: str | None = None
-    ts: str | None = None
+    ts: datetime | None = None
     farm_id: int
     temp_c: float
     humidity_pct: float
@@ -26,6 +29,8 @@ class TelemetryIn(BaseModel):
 
 
 class TelemetryBatchIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     events: list[TelemetryIn]
 
 
@@ -80,7 +85,7 @@ def ingest_batch(
 
 @router.get("/latest")
 def latest(
-    limit: int = 20,
+    limit: int = Query(default=20, ge=1, le=500),
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ):

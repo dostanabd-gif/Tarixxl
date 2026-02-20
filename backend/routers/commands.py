@@ -1,7 +1,7 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 import pyotp
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -15,6 +15,8 @@ router = APIRouter(prefix="/commands", tags=["commands"])
 
 
 class WhatIfRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     energy_kwh_delta: float
     feed_kg_delta: float
     mortality_delta_birds: int
@@ -22,10 +24,12 @@ class WhatIfRequest(BaseModel):
 
 
 class SetPointRequest(BaseModel):
-    node_id: str
-    command: str
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str = Field(min_length=2, max_length=128)
+    command: str = Field(min_length=2, max_length=128)
     value: float
-    otp_code: str
+    otp_code: str = Field(min_length=6, max_length=8)
 
 
 @router.post("/what-if")

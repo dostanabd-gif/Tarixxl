@@ -39,3 +39,10 @@ DROP POLICY IF EXISTS edge_queue_org_isolation ON edge_command_queue;
 CREATE POLICY edge_queue_org_isolation ON edge_command_queue
 USING (org_id = current_setting('app.current_org_id', true)::BIGINT)
 WITH CHECK (org_id = current_setting('app.current_org_id', true)::BIGINT);
+
+ALTER TABLE edge_command_queue
+  DROP CONSTRAINT IF EXISTS edge_command_queue_status_check;
+
+ALTER TABLE edge_command_queue
+  ADD CONSTRAINT edge_command_queue_status_check
+  CHECK (status IN ('queued', 'applied', 'failed'));
