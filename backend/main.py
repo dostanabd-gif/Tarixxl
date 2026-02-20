@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from core.config import settings
-from routers import admin, auth, billing, commands, dashboard, telemetry
+from routers import admin, auth, billing, commands, dashboard, edge, telemetry
 
 app = FastAPI(title=settings.app_name)
 
@@ -22,3 +22,4 @@ app.include_router(commands.router)
 app.include_router(dashboard.router)
 app.include_router(billing.router)
 app.include_router(admin.router)
+app.include_router(edge.router)
