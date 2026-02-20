@@ -1,9 +1,21 @@
 from fastapi import FastAPI
 
 from core.config import settings
+from core.db import SessionLocal
 from routers import admin, auth, billing, commands, dashboard, edge, telemetry
+from services.user_service import ensure_bootstrap_owner
 
 app = FastAPI(title=settings.app_name)
+
+
+@app.on_event("startup")
+def bootstrap_owner() -> None:
+    db = SessionLocal()
+    try:
+        ensure_bootstrap_owner(db)
+        db.commit()
+    finally:
+        db.close()
 
 
 @app.get("/")
