@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, model_validator
 from sqlalchemy.orm import Session
 
+from core.config import settings
 from core.db import get_db
 from core.deps import CurrentUser, get_current_user
 from core.security import create_access_token, verify_password
@@ -13,8 +14,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    email: EmailStr
+    login: str | None = None
+    email: str | None = None
     password: str
+
+    @model_validator(mode="after")
+    def validate_login_source(self):
+        if not self.login and not self.email:
+            raise ValueError("login or email is required")
+        return self
 
 
 class LoginResponse(BaseModel):
@@ -24,9 +32,20 @@ class LoginResponse(BaseModel):
     role: str
 
 
+def resolve_login_to_email(login: str) -> str:
+    normalized = login.strip().lower()
+    if "@" in normalized:
+        return normalized
+    if normalized in {"admin", "owner"}:
+        return settings.owner_email
+    return normalized
+
+
 @router.post("/login", response_model=LoginResponse, summary="Вход пользователя")
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = get_user_by_email(db, str(payload.email))
+    source = payload.login or payload.email or ""
+    email = resolve_login_to_email(source)
+    user = get_user_by_email(db, email)
     if not user or not user["is_active"]:
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
 
