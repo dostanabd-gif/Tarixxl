@@ -21,9 +21,16 @@
 - `/commands` — what-if анализ и безопасная постановка команд
 - `/edge` — online/offline интеграция мини-ПК
 - `/dashboard`, `/billing`, `/admin`
+- `/ai/chat` — AI помощник на базе Ollama
 
 ## Текущий статус проекта
 Проект находится в стадии **подготовки к production-деплою**:
 1. Завершаем backend-функционал и тесты.
 2. Подключаем frontend к реальному API.
 3. Переносим на сервер с HTTPS, бэкапами и мониторингом.
+
+## Ollama интеграция
+Для локального AI-чата backend использует Ollama (`/ai/chat`).
+Настройки через env:
+- `OLLAMA_BASE_URL` (по умолчанию `http://localhost:11434`)
+- `OLLAMA_MODEL` (по умолчанию `llama3.1:8b`)
